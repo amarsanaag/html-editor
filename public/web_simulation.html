@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Хуудас хүргэх даалгавар</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --ink: #1c2333;
+    --muted: #5b6478;
+    --line: #d5dbe7;
+    --browser: #2f6fde;
+    --dns: #8a4fd8;
+    --router: #10958a;
+    --server: #e07a1f;
+    --ok: #1f9d55;
+    --bad: #d64545;
+    --packet: #ffd23f;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .2px; }
+  header h1 span { color: var(--packet); }
+  .speed { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+  .speed button {
+    border: 1px solid #ffffff55; background: transparent; color: #fff;
+    border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit;
+  }
+  .speed button.on { background: #fff; color: var(--ink); }
+
+  nav.levels {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 12px 20px 0;
+  }
+  nav.levels button {
+    font: inherit; font-size: 14px; cursor: pointer;
+    border: 2px solid var(--line); background: var(--panel); color: var(--ink);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  nav.levels button.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+  nav.levels button.done::after { content: " ✓"; color: var(--ok); font-weight: 700; }
+  nav.levels button.on.done::after { color: #7ee2a8; }
+
+  main { padding: 12px 20px 24px; max-width: 1280px; margin: 0 auto; }
+
+  /* ---------- stage ---------- */
+  .stage {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.35fr 1.5fr 1fr;
+    grid-template-areas:
+      "browser dns server"
+      "browser net server";
+    grid-template-rows: auto 1fr;
+    gap: 22px 28px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    min-height: 430px;
+  }
+  svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  svg.wires line { stroke: #b9c2d6; stroke-width: 3; stroke-linecap: round; }
+  svg.wires line.dash { stroke-dasharray: 6 7; }
+
+  .node {
+    position: relative; z-index: 1;
+    border: 2px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+    font: inherit; color: inherit; text-align: left;
+    transition: box-shadow .2s, border-color .2s, transform .2s;
+  }
+  .node .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 14px; color: #fff;
+    border-radius: 8px; padding: 2px 10px; margin-bottom: 8px;
+  }
+  .asking .node.pickable { cursor: pointer; }
+  .asking .node.pickable:hover { transform: translateY(-2px); box-shadow: 0 6px 16px #0002; }
+  .node.hint { animation: pulse 1s infinite; }
+  .node.active { box-shadow: 0 0 0 4px var(--packet); }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 #ffd23fcc; }
+    50% { box-shadow: 0 0 0 10px #ffd23f00; }
+  }
+  .node.shake { animation: shake .35s; }
+  @keyframes shake {
+    25% { transform: translateX(-6px); } 75% { transform: translateX(6px); }
+  }
+
+  /* browser */
+  #n-browser { grid-area: browser; padding: 12px; display: flex; flex-direction: column; border-color: var(--browser); }
+  #n-browser .tag { background: var(--browser); }
+  .bar { display: flex; gap: 6px; margin-bottom: 10px; }
+  .bar input {
+    flex: 1; min-width: 0; font: inherit; font-size: 15px;
+    border: 2px solid var(--line); border-radius: 999px; padding: 7px 14px;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  .bar input:focus { outline: none; border-color: var(--browser); }
+  .bar button {
+    font: inherit; font-weight: 700; cursor: pointer;
+    border: 0; border-radius: 999px; background: var(--browser); color: #fff; padding: 7px 16px;
+  }
+  .bar button:disabled { opacity: .5; cursor: default; }
+  .bar input:disabled { color: var(--ink); background: #f3f5f9; -webkit-text-fill-color: var(--ink); cursor: default; }
+  .viewport {
+    flex: 1; min-height: 210px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: #fbfcfe; padding: 14px; overflow: auto;
+  }
+  .viewport .empty { color: var(--muted); text-align: center; margin-top: 60px; }
+
+  /* dns */
+  #n-dns { grid-area: dns; padding: 12px; border-color: var(--dns); align-self: start; }
+  #n-dns .tag { background: var(--dns); }
+  .dns-desc { font-size: 13px; color: var(--muted); margin: -2px 0 6px; }
+  table.dns { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.dns th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 2px 6px; }
+  table.dns td { padding: 4px 6px; border-top: 1px solid var(--line); font-family: ui-monospace, Consolas, monospace; }
+  table.dns tr.scan td { background: #efe7fb; }
+  table.dns tr.hit td { background: #d9f5e4; font-weight: 700; }
+  table.dns tr.new td { animation: newrow 1.2s; }
+  @keyframes newrow { from { background: var(--packet); } to { background: transparent; } }
+  .dns-miss { color: var(--bad); font-weight: 700; font-size: 14px; margin-top: 6px; display: none; }
+
+  /* routers */
+  .net { grid-area: net; display: flex; justify-content: space-around; align-items: center; gap: 10px; }
+  .router {
+    width: 92px; height: 92px; border-radius: 50%;
+    border-color: var(--router); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 6px;
+  }
+  .router .ico { font-size: 26px; line-height: 1; }
+  .router small { font-size: 12px; font-weight: 700; color: var(--router); }
+
+  /* server */
+  #n-server { grid-area: server; padding: 12px; border-color: var(--server); display: flex; flex-direction: column; }
+  #n-server .tag { background: var(--server); }
+  .srv-meta { font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .files button {
+    width: 100%; text-align: left; font: inherit; font-size: 14px;
+    font-family: ui-monospace, Consolas, monospace;
+    border: 1px solid var(--line); background: #fff8f1; border-radius: 8px; padding: 6px 10px;
+  }
+  .files button.pickable { cursor: pointer; }
+  .files button.pickable:hover { border-color: var(--server); }
+  .files button.hit { background: #d9f5e4; border-color: var(--ok); font-weight: 700; }
+  .files button.hint { animation: pulse 1s infinite; }
+  .files li.new button { animation: newrow 1.2s; }
+  .missing-btn {
+    margin-top: 10px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    border: 2px dashed var(--bad); color: var(--bad); background: #fff; border-radius: 8px; padding: 6px 10px; display: none;
+  }
+
+  /* packet */
+  .packet {
+    position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--packet); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 10px;
+    padding: 4px 9px; font-size: 13px; font-weight: 700; white-space: nowrap;
+    font-family: ui-monospace, Consolas, monospace;
+    box-shadow: 0 4px 10px #0003;
+  }
+  .packet.reply { background: #c8f3d8; }
+  .packet.err { background: #ffd0d0; }
+
+  /* lower area */
+  .lower { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; margin-top: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .card h2 { margin: 0 0 6px; font-size: 15px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  #task { font-size: 17px; }
+  #say { font-size: 19px; min-height: 58px; }
+  #say b { color: var(--browser); }
+  #feedback { margin-top: 8px; font-size: 16px; color: var(--bad); min-height: 22px; }
+  #feedback.good { color: var(--ok); }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; background: #eef1f7; border-radius: 5px; padding: 0 5px; }
+  .log { list-style: none; margin: 0; padding: 0; font-family: ui-monospace, Consolas, monospace; font-size: 13px; max-height: 210px; overflow: auto; }
+  .log li { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .log .ok { color: var(--ok); font-weight: 700; }
+  .log .bad { color: var(--bad); font-weight: 700; }
+  .counter { font-size: 15px; margin-bottom: 8px; }
+  .counter b { font-size: 22px; }
+
+  .quiz { margin-top: 14px; border-top: 2px solid var(--line); padding-top: 12px; }
+  .quiz p { font-weight: 700; font-size: 18px; margin: 0 0 10px; }
+  .quiz .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .quiz .opts button {
+    font: inherit; cursor: pointer; border: 2px solid var(--line); background: #fff;
+    border-radius: 10px; padding: 8px 14px;
+  }
+  .quiz .opts button:hover { border-color: var(--ink); }
+  .quiz .opts button.right { border-color: var(--ok); background: #d9f5e4; }
+  .quiz .opts button.wrong { border-color: var(--bad); background: #ffe3e3; }
+  .next {
+    margin-top: 12px; font: inherit; font-weight: 700; cursor: pointer;
+    background: var(--ink); color: #fff; border: 0; border-radius: 999px; padding: 9px 20px;
+  }
+  .row-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .ghost {
+    font: inherit; font-size: 14px; cursor: pointer; background: transparent;
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; color: var(--muted);
+  }
+
+  /* computer (level 5) */
+  .computer { margin-top: 10px; border: 2px dashed var(--browser); border-radius: 10px; padding: 10px 12px; background: #f3f7ff; }
+  .computer ul { margin: 6px 0 10px; padding-left: 18px; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+  .computer label { font-weight: 700; font-size: 14px; display: block; margin-bottom: 4px; }
+  .name-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-family: ui-monospace, Consolas, monospace; }
+  .name-row input { font: inherit; border: 2px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 150px; min-width: 0; }
+  .deploy {
+    margin-top: 10px; font: inherit; font-weight: 700; cursor: pointer; border: 0;
+    border-radius: 999px; padding: 8px 16px; background: var(--server); color: #fff;
+  }
+
+  /* mini pages in viewport */
+  .mp h3 { margin: 0 0 6px; font-size: 22px; }
+  .mp p { margin: 0 0 8px; }
+  .mp .lnk { color: #1a4fd0; text-decoration: underline; }
+  .mp.plain { font-family: "Times New Roman", serif; }
+  .mp.plain h3 { font-size: 24px; }
+  .mp .img-wait {
+    border: 1px dashed #999; color: #888; font-size: 13px; padding: 18px; text-align: center; width: 160px;
+  }
+  .mp.styled { font-family: system-ui, Arial, sans-serif; background: linear-gradient(135deg, #fff1d6, #ffe0e9); border-radius: 12px; padding: 14px; }
+  .mp.styled h3 { color: #b4441a; }
+  .mp .pic { font-size: 74px; background: #ffffffaa; border-radius: 14px; width: 130px; text-align: center; }
+  .mp.err { text-align: center; padding-top: 24px; }
+  .mp.err .big { font-size: 54px; font-weight: 800; color: var(--bad); line-height: 1; }
+  .mp.mine { background: linear-gradient(135deg, #1a1a2e, #3b2a6b); color: #fff; border-radius: 12px; padding: 22px 16px; text-align: center; }
+  .mp.mine h3 { font-size: 26px; color: #ffb38a; }
+  .mp.mine .btn { display: inline-block; background: #ff6b35; color: #fff; border-radius: 999px; padding: 6px 14px; font-weight: 700; margin-top: 6px; }
+  .mp.mine .cards { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  .mp.mine .cards span { background: #ffffff1a; border-radius: 10px; padding: 10px; font-size: 22px; }
+
+  .finale { text-align: center; padding: 10px 0; }
+  .finale h3 { font-size: 24px; margin: 0 0 8px; }
+  .finale ol { text-align: left; display: inline-block; margin: 6px 0 0; }
+
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 20px 24px; }
+
+  .logo {
+    height: 32px;
+    margin-right: 8px;
+  }
+
+  @media (max-width: 900px) {
+    .stage {
+      grid-template-columns: 1fr;
+      grid-template-areas: "browser" "dns" "net" "server";
+    }
+    .lower { grid-template-columns: 1fr; }
+    .router { width: 76px; height: 76px; }
+    header h1 { font-size: 19px; }
+    #say { font-size: 17px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .node.hint, .files button.hint { animation: none; outline: 4px solid var(--packet); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="images/logo.png" alt="Хүүхдийн шинжлэх ухаан технологийн ордон" class="logo" aria-hidden="true">
+  <h1>✉ Хуудас хүргэх <span>даалгавар</span></h1>
+  <div class="speed" role="group" aria-label="Хурд">
+    Хурд:
+    <button data-speed="1.7">Удаан</button>
+    <button data-speed="1" class="on">Хэвийн</button>
+    <button data-speed="0.5">Хурдан</button>
+  </div>
+</header>
+
+<nav class="levels" id="levels"></nav>
+
+<main>
+  <section class="stage" id="stage">
+    <svg class="wires" id="wires" aria-hidden="true"></svg>
+
+    <div class="node" id="n-browser" data-node="browser">
+      <div><span class="tag">🖥 Веб хөтөч</span></div>
+      <form class="bar" id="bar" autocomplete="off">
+        <input id="addr" type="text" spellcheck="false" aria-label="Веб хаяг">
+        <button id="go" type="submit">Явах</button>
+      </form>
+      <div class="viewport" id="view"></div>
+      <div id="computer-slot"></div>
+    </div>
+
+    <div class="node" id="n-dns" data-node="dns" role="button" tabindex="0">
+      <span class="tag">📒 DNS</span>
+      <div class="dns-desc">Домэйн нэрийг IP хаяг болгодог «лавлах»</div>
+      <table class="dns">
+        <thead><tr><th>Домэйн</th><th>IP хаяг</th></tr></thead>
+        <tbody id="dns-rows"></tbody>
+      </table>
+      <div class="dns-miss" id="dns-miss">✗ Ийм домэйн олдсонгүй</div>
+    </div>
+
+    <div class="net" id="net">
+      <button class="node router" id="n-r1" data-node="r1" type="button"><span class="ico">🔀</span><small>Чиглүүлэгч 1</small></button>
+      <button class="node router" id="n-r2" data-node="r2" type="button"><span class="ico">🔀</span><small>Чиглүүлэгч 2</small></button>
+      <button class="node router" id="n-r3" data-node="r3" type="button"><span class="ico">🔀</span><small>Чиглүүлэгч 3</small></button>
+    </div>
+
+    <div class="node" id="n-server" data-node="server" role="button" tabindex="0">
+      <div><span class="tag" id="srv-tag">🗄 Сервер</span></div>
+      <div class="srv-meta" id="srv-meta"></div>
+      <ul class="files" id="files"></ul>
+      <button class="missing-btn" id="missing" type="button">✗ Ийм файл алга</button>
+    </div>
+  </section>
+
+  <section class="lower">
+    <div class="card">
+      <h2>Даалгавар</h2>
+      <div id="task"></div>
+      <div style="height:12px"></div>
+      <h2>Юу болж байна</h2>
+      <div id="say"></div>
+      <div id="feedback"></div>
+      <div id="quiz-slot"></div>
+      <div class="row-btns"><button class="ghost" id="restart" type="button">↺ Энэ түвшинг дахин эхлэх</button></div>
+    </div>
+    <div class="card">
+      <h2>Хүсэлтийн тэмдэглэл</h2>
+      <div class="counter">Илгээсэн хүсэлт: <b id="count">0</b></div>
+      <ul class="log" id="log"></ul>
+    </div>
+  </section>
+</main>
+
+<footer>Хүүхдийн шинжлэх ухаан технологийн ордон · Энэ симуляц өөрөө ч HTML, CSS, JavaScript-ээр хийсэн веб хуудас.</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------- data ----------------
+  const AMITAN_IP = "203.0.113.10";
+  const NETLIFY_IP = "198.51.100.7";
+  const AMITAN_FILES = ["index.html", "irves.html", "style.css", "irves.jpg"];
+  const MY_FILES = ["index.html", "sources.html", "style.css", "img/zurag.jpg"];
+
+  const LEVELS = [
+    { title: "1. Хуудас авах" },
+    { title: "2. Буруу домэйн" },
+    { title: "3. Буруу зам" },
+    { title: "4. Зурагтай хуудас" },
+    { title: "5. Өөрийн сайтыг нийтлэх" },
+  ];
+
+  const $ = (s) => document.querySelector(s);
+  const stage = $("#stage");
+  const nodes = {
+    browser: $("#n-browser"), dns: $("#n-dns"),
+    r1: $("#n-r1"), r2: $("#n-r2"), r3: $("#n-r3"), server: $("#n-server"),
+  };
+  const NODE_NAME = {
+    browser: "Веб хөтөч", dns: "DNS", r1: "Чиглүүлэгч 1", r2: "Чиглүүлэгч 2", r3: "Чиглүүлэгч 3", server: "Сервер",
+  };
+
+  let speed = 1;
+  let current = 0;
+  const done = new Set();
+  let dnsTable = {};
+  let serverFiles = [];
+  let reqCount = 0;
+  let myName = "";
+
+  // ---------------- abort handling ----------------
+  const ABORT = Symbol("abort");
+  let run = { aborted: false };
+  let pendings = [];
+  function guard(r) { if (r.aborted) throw ABORT; }
+  function pending(executor) {
+    const r = run;
+    return new Promise((resolve, reject) => {
+      const rej = () => reject(ABORT);
+      pendings.push(rej);
+      executor((v) => { pendings = pendings.filter((x) => x !== rej); if (!r.aborted) resolve(v); }, r);
+    });
+  }
+  function abortRun() {
+    run.aborted = true;
+    pendings.forEach((f) => f());
+    pendings = [];
+    document.querySelectorAll(".packet").forEach((p) => p.remove());
+    run = { aborted: false };
+  }
+  const sleep = (ms) => pending((res) => setTimeout(res, ms * speed));
+
+  // ---------------- UI helpers ----------------
+  function say(html) { $("#say").innerHTML = html; }
+  function task(html) { $("#task").innerHTML = html; }
+  function feedback(text, good = false) {
+    const f = $("#feedback");
+    f.textContent = text || "";
+    f.className = good ? "good" : "";
+  }
+  function view(html) { $("#view").innerHTML = html; }
+  function log(html, cls) {
+    const li = document.createElement("li");
+    li.innerHTML = cls ? `<span class="${cls}">${html}</span>` : html;
+    $("#log").appendChild(li);
+    li.scrollIntoView({ block: "nearest" });
+  }
+  function countReq() { reqCount++; $("#count").textContent = reqCount; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  function setActive(id, on) { nodes[id] && nodes[id].classList.toggle("active", on); }
+
+  function renderDNS(flashHost) {
+    const tb = $("#dns-rows");
+    tb.innerHTML = "";
+    Object.entries(dnsTable).forEach(([h, ip]) => {
+      const tr = document.createElement("tr");
+      tr.dataset.host = h;
+      tr.innerHTML = `<td>${esc(h)}</td><td>${esc(ip)}</td>`;
+      if (h === flashHost) tr.classList.add("new");
+      tb.appendChild(tr);
+    });
+    $("#dns-miss").style.display = "none";
+  }
+  function renderServer(label, ip, files, flashFile) {
+    $("#srv-tag").textContent = "🗄 " + label;
+    $("#srv-meta").textContent = ip ? "IP: " + ip : "";
+    const ul = $("#files");
+    ul.innerHTML = "";
+    files.forEach((f) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<button type="button" data-file="${esc(f)}">📄 ${esc(f)}</button>`;
+      if (f === flashFile) li.classList.add("new");
+      ul.appendChild(li);
+    });
+    $("#missing").style.display = "none";
+  }
+
+  // ---------------- wires ----------------
+  function center(el) {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  function drawWires() {
+    const svg = $("#wires");
+    const s = stage.getBoundingClientRect();
+    const c = (id) => { const p = center(nodes[id]); return { x: p.x - s.left, y: p.y - s.top }; };
+    const pairs = [["browser", "dns", true], ["browser", "r1"], ["r1", "r2"], ["r2", "r3"], ["r3", "server"]];
+    svg.setAttribute("viewBox", `0 0 ${s.width} ${s.height}`);
+    svg.innerHTML = pairs.map(([a, b, dash]) => {
+      const p = c(a), q = c(b);
+      return `<line x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" class="${dash ? "dash" : ""}"/>`;
+    }).join("");
+  }
+  window.addEventListener("resize", drawWires);
+
+  // ---------------- packets ----------------
+  async function fly(fromEl, toEl, label, kind = "") {
+    const r = run;
+    guard(r);
+    const p = document.createElement("div");
+    p.className = "packet " + kind;
+    p.innerHTML = `✉ ${esc(label)}`;
+    document.body.appendChild(p);
+    const w = p.offsetWidth, h = p.offsetHeight;
+    const a = center(fromEl), b = center(toEl);
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    const dur = Math.max(450, Math.min(1300, dist * 2.2)) * speed;
+    const anim = p.animate(
+      [
+        { transform: `translate(${a.x - w / 2}px, ${a.y - h / 2}px) scale(.8)` },
+        { transform: `translate(${(a.x + b.x) / 2 - w / 2}px, ${(a.y + b.y) / 2 - h / 2 - 14}px) scale(1)` },
+        { transform: `translate(${b.x - w / 2}px, ${b.y - h / 2}px) scale(.9)` },
+      ],
+      { duration: dur, easing: "ease-in-out", fill: "forwards" }
+    );
+    try {
+      await pending((res) => { anim.finished.then(res, res); });
+    } finally {
+      p.remove();
+    }
+    guard(r);
+  }
+  async function hops(path, label, kind) {
+    for (let i = 0; i < path.length - 1; i++) {
+      setActive(path[i], true);
+      await fly(nodes[path[i]], nodes[path[i + 1]], label, kind);
+      setActive(path[i], false);
+    }
+    setActive(path[path.length - 1], true);
+    await sleep(200);
+    setActive(path[path.length - 1], false);
+  }
+
+  // ---------------- asking the student ----------------
+  // Wait until the student clicks the correct node.
+  function askNode(correct, wrongMsgs) {
+    stage.classList.add("asking");
+    Object.values(nodes).forEach((n) => n.classList.add("pickable"));
+    let misses = 0;
+    return pending((resolve, r) => {
+      function onClick(e) {
+        const el = e.target.closest("[data-node]");
+        if (!el || r.aborted) return;
+        if (e.target.closest("#bar") || e.target.closest(".files") || e.target.closest("#computer-slot")) return;
+        const id = el.dataset.node;
+        if (id === correct) {
+          cleanup();
+          feedback("Зөв! ✓", true);
+          resolve();
+        } else {
+          misses++;
+          el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+          feedback("✗ " + (wrongMsgs[id] || `${NODE_NAME[id]} энэ ажлыг хийдэггүй. Дахин бодоорой.`));
+          if (misses >= 2) nodes[correct].classList.add("hint");
+        }
+      }
+      function cleanup() {
+        stage.removeEventListener("click", onClick);
+        stage.classList.remove("asking");
+        Object.values(nodes).forEach((n) => n.classList.remove("pickable", "hint"));
+      }
+      stage.addEventListener("click", onClick);
+      pendings.push(cleanup);
+    });
+  }
+
+  // Wait until the student clicks the right file (or "missing").
+  function askFile(target, allowMissing) {
+    const btns = [...document.querySelectorAll("#files button")];
+    btns.forEach((b) => b.classList.add("pickable"));
+    const miss = $("#missing");
+    if (allowMissing) miss.style.display = "block";
+    let misses = 0;
+    return pending((resolve) => {
+      function onClick(e) {
+        const b = e.target.closest("button");
+        if (!b) return;
+        const exists = serverFiles.includes(target);
+        if (b === miss) {
+          if (!exists) { cleanup(); feedback("Зөв! Ийм файл серверт байхгүй ✓", true); resolve(null); }
+          else { misses++; feedback("✗ Сайн хайгаарай — энэ файл жагсаалтад байна."); hint(); }
+          return;
+        }
+        const f = b.dataset.file;
+        if (!f) return;
+        if (f === target) { cleanup(); b.classList.add("hit"); feedback("Зөв! ✓", true); resolve(f); }
+        else {
+          misses++;
+          feedback(`✗ Энэ бол ${f}. Хүсэлтэд «${target}» гэж бичсэн байна.`);
+          hint();
+        }
+      }
+      function hint() {
+        if (misses < 2) return;
+        if (serverFiles.includes(target)) {
+          const t = document.querySelector(`#files button[data-file="${CSS.escape(target)}"]`);
+          t && t.classList.add("hint");
+        } else miss.classList.add("hint");
+      }
+      function cleanup() {
+        $("#n-server").removeEventListener("click", onClick);
+        btns.forEach((b) => b.classList.remove("pickable", "hint"));
+        miss.classList.remove("hint");
+        miss.style.display = "none";
+      }
+      $("#n-server").addEventListener("click", onClick);
+      pendings.push(cleanup);
+    });
+  }
+
+  // Wait until the student submits an address that passes the check.
+  function askAddress(check) {
+    const input = $("#addr"), go = $("#go");
+    input.disabled = false; go.disabled = false;
+    setTimeout(() => input.focus(), 50);
+    return pending((resolve) => {
+      function onSubmit(e) {
+        e.preventDefault();
+        const u = parseURL(input.value);
+        if (!u) { feedback("✗ Веб хаягаа шалгаарай. Жишээ: https://amitan.mn/index.html"); return; }
+        const msg = check(u);
+        if (msg) { feedback("✗ " + msg); return; }
+        cleanup();
+        feedback("");
+        input.value = u.href;
+        resolve(u);
+      }
+      function cleanup() {
+        $("#bar").removeEventListener("submit", onSubmit);
+        input.disabled = true; go.disabled = true;
+      }
+      $("#bar").addEventListener("submit", onSubmit);
+      pendings.push(cleanup);
+    });
+  }
+
+  function parseURL(raw) {
+    let s = (raw || "").trim();
+    if (!s) return null;
+    if (!/^https?:\/\//i.test(s)) s = "https://" + s;
+    try {
+      const u = new URL(s);
+      const path = decodeURIComponent(u.pathname).replace(/^\/+/, "");
+      return { host: u.hostname.toLowerCase(), path, href: "https://" + u.hostname.toLowerCase() + "/" + path };
+    } catch { return null; }
+  }
+
+  // Multiple-choice question at the end of a level.
+  function quiz(q) {
+    const slot = $("#quiz-slot");
+    slot.innerHTML = `<div class="quiz"><p>❓ ${q.text}</p><div class="opts"></div><div class="qfb"></div></div>`;
+    const opts = slot.querySelector(".opts");
+    const qfb = slot.querySelector(".qfb");
+    q.options.forEach((o, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.innerHTML = o;
+      b.addEventListener("click", () => {
+        if (slot.dataset.solved) return;
+        if (i === q.answer) {
+          b.classList.add("right");
+          slot.dataset.solved = "1";
+          qfb.innerHTML = `<p style="color:var(--ok);font-weight:600;font-size:16px;margin:10px 0 0">✓ ${q.why}</p>`;
+          finishLevel();
+        } else {
+          b.classList.add("wrong");
+          qfb.innerHTML = `<p style="color:var(--bad);font-weight:600;font-size:16px;margin:10px 0 0">✗ ${q.hint}</p>`;
+        }
+      });
+      opts.appendChild(b);
+    });
+    slot.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function finishLevel() {
+    done.add(current);
+    renderNav();
+    const slot = $("#quiz-slot");
+    const b = document.createElement("button");
+    b.className = "next"; b.type = "button";
+    if (current < LEVELS.length - 1) {
+      b.textContent = "Дараагийн түвшин ▶";
+      b.addEventListener("click", () => startLevel(current + 1));
+    } else {
+      b.textContent = "Дүгнэлт харах ▶";
+      b.addEventListener("click", showFinale);
+    }
+    slot.appendChild(b);
+  }
+
+  // ---------------- the request flow ----------------
+  // opts: askDNS, askRouter, askFileMode ("click" | "auto"), allowMissing, dnsCached
+  async function fetchFlow(u, opts = {}) {
+    const r = run;
+    const file = u.path === "" ? "index.html" : u.path;
+
+    // 1. DNS
+    let ip;
+    if (opts.dnsCached) {
+      ip = dnsTable[u.host];
+      say(`IP хаяг (<code>${ip}</code>) аль хэдийн мэдэгдэж байгаа тул веб хөтөч DNS-ээс дахин асуухгүй.`);
+      await sleep(900);
+    } else {
+      say(`Веб хөтөч <b>${esc(u.host)}</b> гэсэн нэрийг мэдэж байгаа ч серверийн <b>IP хаяг</b>ийг мэдэхгүй. ${opts.askDNS ? "<br><b>Хэнээс асуух вэ?</b> Зөв газрыг дарна уу." : "Тиймээс DNS-ээс асууна."}`);
+      if (opts.askDNS) {
+        await askNode("dns", {
+          server: "Серверийн IP хаяг мэдэгдэхгүй байгаа тул шууд илгээж чадахгүй.",
+          r1: "Чиглүүлэгч IP хаягаар л замаа олдог. Эхлээд IP хаягаа олох хэрэгтэй.",
+          r2: "Чиглүүлэгч IP хаягаар л замаа олдог. Эхлээд IP хаягаа олох хэрэгтэй.",
+          r3: "Чиглүүлэгч IP хаягаар л замаа олдог. Эхлээд IP хаягаа олох хэрэгтэй.",
+          browser: "Веб хөтөч өөрөө IP хаягийг мэдэхгүй байна.",
+        });
+      } else await sleep(600);
+      await fly(nodes.browser, nodes.dns, u.host + " ?");
+      countReqDNS(u.host);
+      ip = await dnsLookup(u.host);
+      guard(r);
+      if (!ip) {
+        await fly(nodes.dns, nodes.browser, "олдсонгүй", "err");
+        log(`← DNS: ${esc(u.host)} олдсонгүй`, "bad");
+        view(`<div class="mp err"><div style="font-size:42px">😕</div><h3>Энэ сайтыг олж чадсангүй</h3><p><code>${esc(u.host)}</code> домэйны IP хаягийг DNS олсонгүй.<br>Хаягаа зөв бичсэн эсэхээ шалгана уу.</p></div>`);
+        return { ok: false, reason: "dns" };
+      }
+      await fly(nodes.dns, nodes.browser, ip, "reply");
+      log(`← DNS: ${esc(u.host)} = ${ip}`, "ok");
+      say(`DNS хариуллаа: <b>${esc(u.host)}</b> = <code>${ip}</code>. Одоо веб хөтөч серверийн хаягийг мэдэж байна.`);
+      await sleep(700);
+    }
+
+    // 2. routers
+    if (opts.askRouter) {
+      say(`Хүсэлт: «<code>${esc(file)}</code> файлыг надад өгөөч». <b>Хүсэлтийг хамгийн түрүүнд хэнд өгөх вэ?</b>`);
+      await askNode("r1", {
+        dns: "DNS зөвхөн нэрийг IP хаяг болгодог. Хуудас хүргэдэггүй.",
+        server: "Сервер хол байна. Хүсэлт чиглүүлэгчдээр дамжиж байж хүрнэ.",
+        r2: "Хамгийн ойрын чиглүүлэгч нь 1-р чиглүүлэгч.",
+        r3: "Хамгийн ойрын чиглүүлэгч нь 1-р чиглүүлэгч.",
+        browser: "Хүсэлт веб хөтчөөс гарч явах ёстой.",
+      });
+      say("Чиглүүлэгчид дугтуйг онгойлгохгүй. Зөвхөн IP хаягийг харж, дараагийн чиглүүлэгч рүү дамжуулна.");
+    } else {
+      say(`Веб хөтөч «<code>${esc(file)}</code> файлыг өгөөч» гэсэн хүсэлтийг чиглүүлэгчдээр дамжуулан сервер рүү илгээнэ.`);
+    }
+    countReq();
+    log(`→ хүсэлт: ${esc(u.host)}/${esc(u.path)}`);
+    await hops(["browser", "r1", "r2", "r3", "server"], "/" + u.path);
+
+    // 3. server
+    if (u.path === "") {
+      say(`Хаягт файлын нэр бичээгүй тул сервер анхдагчаар <code>index.html</code>-ийг өгнө. Ийм учраас нүүр хуудсыг <b>index.html</b> гэж нэрлэдэг.`);
+      await sleep(1600);
+    }
+    let found;
+    if (opts.askFileMode === "click") {
+      say(`Сервер хүсэлтийг хүлээж авлаа: <code>${esc(file)}</code>. <b>Серверийн хавтаснаас тэр файлыг олж дарна уу.</b>${opts.allowMissing ? " Байхгүй бол «Ийм файл алга» товчийг дарна." : ""}`);
+      found = await askFile(file, opts.allowMissing);
+    } else {
+      found = serverFiles.includes(file) ? file : null;
+      const b = found && document.querySelector(`#files button[data-file="${CSS.escape(file)}"]`);
+      if (b) b.classList.add("hit");
+      say(found ? `Сервер <code>${esc(file)}</code> файлыг олж буцаана.` : `Сервер <code>${esc(file)}</code> файлыг олсонгүй.`);
+      await sleep(600);
+    }
+    guard(r);
+
+    // 4. response
+    if (!found) {
+      say(`Сервер «<b>404 — олдсонгүй</b>» гэсэн хариуг буцаана.`);
+      await hops(["server", "r3", "r2", "r1", "browser"], "404", "err");
+      log(`← 404 олдсонгүй: ${esc(file)}`, "bad");
+      return { ok: false, reason: "404", file };
+    }
+    say(`Сервер «<b>200 — OK</b>» гэсэн тэмдэгтэй хамт файлыг буцаана.`);
+    await hops(["server", "r3", "r2", "r1", "browser"], "200 " + file, "reply");
+    log(`← 200 OK: ${esc(file)}`, "ok");
+    return { ok: true, file };
+  }
+  function countReqDNS(host) { log(`→ DNS: ${esc(host)} хэн бэ?`); }
+
+  async function dnsLookup(host) {
+    const rows = [...document.querySelectorAll("#dns-rows tr")];
+    for (const tr of rows) {
+      tr.classList.add("scan");
+      await sleep(320);
+      tr.classList.remove("scan");
+      if (tr.dataset.host === host) { tr.classList.add("hit"); await sleep(500); return dnsTable[host]; }
+    }
+    $("#dns-miss").style.display = "block";
+    await sleep(700);
+    return null;
+  }
+
+  // ---------------- mini pages ----------------
+  const PAGE_AMITAN = `<div class="mp"><h3>🐾 Амьтдын ертөнц</h3><p>Монголын амьтдын тухай жижиг сайт.</p><p><span class="lnk">Ирвэс</span> · <span class="lnk">Тэмээ</span> · <span class="lnk">Морь</span></p></div>`;
+  const page404 = (f) => `<div class="mp err"><div class="big">404</div><h3>Хуудас олдсонгүй</h3><p><code>${esc(f)}</code> гэсэн хуудас энэ серверт байхгүй.</p></div>`;
+  const PAGE_IRVES_PLAIN = `<div class="mp plain"><h3>Ирвэс</h3><p>Ирвэс Монголын өндөр уулсад амьдардаг.</p><div class="img-wait">⏳ irves.jpg хүлээгдэж байна</div></div>`;
+  const PAGE_IRVES_STYLED = `<div class="mp styled"><h3>Ирвэс</h3><p>Ирвэс Монголын өндөр уулсад амьдардаг.</p><div class="img-wait">⏳ irves.jpg хүлээгдэж байна</div></div>`;
+  const PAGE_IRVES_FULL = `<div class="mp styled"><h3>Ирвэс</h3><p>Ирвэс Монголын өндөр уулсад амьдардаг.</p><div class="pic">🐆</div></div>`;
+  const pageMine = (n) => `<div class="mp mine"><h3>${esc(n)}</h3><p>Миний анхны веб сайт</p><span class="btn">Эх сурвалж →</span><div class="cards"><span>⭐</span><span>🎵</span><span>🏀</span></div></div>`;
+
+  function resetStage(addrValue) {
+    dnsTable = { "amitan.mn": AMITAN_IP };
+    serverFiles = [...AMITAN_FILES];
+    renderDNS();
+    renderServer("Сервер (amitan.mn)", AMITAN_IP, serverFiles);
+    reqCount = 0; $("#count").textContent = "0";
+    $("#log").innerHTML = "";
+    $("#quiz-slot").innerHTML = "";
+    delete $("#quiz-slot").dataset.solved;
+    $("#computer-slot").innerHTML = "";
+    feedback("");
+    view(`<div class="empty">Хаяг бичээд «Явах» дарна уу</div>`);
+    $("#addr").value = addrValue || "";
+    $("#addr").disabled = true; $("#go").disabled = true;
+    Object.values(nodes).forEach((n) => n.classList.remove("active", "hint", "pickable"));
+    requestAnimationFrame(drawWires);
+  }
+
+  // ---------------- levels ----------------
+  async function level1() {
+    resetStage("https://amitan.mn/index.html");
+    task(`Веб хөтөчийн хаягийн мөрөнд <code>https://amitan.mn/index.html</code> гэж бичсэн байна. <b>«Явах»</b> дарж, хуудас хэрхэн ирэхийг алхам алхмаар даган явуулна уу.`);
+    say("Веб хаяг бичихэд юу болдог вэ? Эхлээд «Явах» товчийг дарна уу.");
+    const u = await askAddress((u) => u.host !== "amitan.mn" ? "Энэ түвшинд amitan.mn хаягийг ашиглана." : null);
+    const res = await fetchFlow(u, { askDNS: true, askRouter: true, askFileMode: "click" });
+    if (!res.ok) { say("Энэ түвшинд index.html хуудсыг нээнэ. «Энэ түвшинг дахин эхлэх» дарна уу."); return; }
+    say("Веб хөтөч HTML кодыг уншиж хуудсыг <b>зурлаа</b>. Энэ бүхэн бодит интернэтэд секундийн мянганы хэдэн хэсэгт болдог.");
+    view(PAGE_AMITAN);
+    quiz({
+      text: "Домэйн нэрийг IP хаяг болгодог нь юу вэ?",
+      options: ["Веб хөтөч", "DNS", "Чиглүүлэгч", "Сервер"],
+      answer: 1,
+      why: "DNS бол домэйн нэрийг IP хаяг руу хөрвүүлдэг «лавлах».",
+      hint: "Хуудас ирэх замын хамгийн эхний алхмыг санаарай.",
+    });
+  }
+
+  async function level2() {
+    resetStage("https://amitan.mn");
+    task(`Энэ удаад хаягийг <b>санаатайгаар буруу бичнэ</b>. Домэйны нэг үсгийг өөрчилнө үү (жишээ: <code>https://amltan.mn</code>) тэгээд «Явах» дарна уу.`);
+    say("Хаяг буруу бол юу болох вэ? Таамаглаад үзээрэй.");
+    const u = await askAddress((u) =>
+      u.host === "amitan.mn" ? "Энэ бол зөв хаяг. Энэ удаад санаатайгаар нэг үсгийг буруу бичнэ үү." : null);
+    const res = await fetchFlow(u, { askDNS: true, askRouter: false, askFileMode: "auto" });
+    if (res.ok) return;
+    say(`DNS-ийн лавлахад <code>${esc(u.host)}</code> гэсэн нэр байхгүй. IP хаяг олдоогүй тул хүсэлт <b>чиглүүлэгч, сервер хүртэл огт явсангүй</b>.`);
+    quiz({
+      text: "Хүсэлт яагаад сервер хүртэл хүрсэнгүй вэ?",
+      options: ["Сервер унтарсан", "DNS ийм домэйны IP хаягийг олсонгүй", "Чиглүүлэгч эвдэрсэн", "Хуудас устгагдсан"],
+      answer: 1,
+      why: "Домэйн буруу бол DNS IP хаягийг олохгүй. IP хаяггүй бол хүсэлт хаашаа явахаа мэдэхгүй.",
+      hint: "Дугтуй хаана зогссоныг харлаа уу?",
+    });
+  }
+
+  async function level3() {
+    resetStage("https://amitan.mn/");
+    task(`Одоо <b>домэйнийг зөв</b>, харин <b>хуудасны нэрийг буруу</b> бичнэ үү. Жишээ: <code>https://amitan.mn/luu.html</code>`);
+    say("Домэйн зөв боловч сервер дээр байхгүй хуудас хүсвэл юу болох вэ?");
+    const u = await askAddress((u) => {
+      if (u.host !== "amitan.mn") return "Домэйн нь amitan.mn байх ёстой. Зөвхөн хуудасны нэрийг буруу бичнэ.";
+      const f = u.path === "" ? "index.html" : u.path;
+      if (AMITAN_FILES.includes(f)) return `«${f}» файл серверт байгаа. Байхгүй хуудасны нэр бичнэ үү (жишээ: luu.html).`;
+      return null;
+    });
+    const res = await fetchFlow(u, { askDNS: false, askRouter: false, askFileMode: "click", allowMissing: true });
+    if (res.ok) return;
+    view(page404(res.file));
+    say(`Энэ удаад DNS IP хаягийг олсон, хүсэлт сервер хүртэл хүрсэн. Гэвч серверт <code>${esc(res.file)}</code> файл байхгүй тул <b>404</b> гэж хариулсан.`);
+    quiz({
+      text: "404 гэдэг юу гэсэн үг вэ?",
+      options: ["Интернэт тасарсан", "Домэйн олдоогүй", "Сервер олдсон ч хүссэн хуудас нь байхгүй", "Веб хөтөч эвдэрсэн"],
+      answer: 2,
+      why: "404 гэдэг нь сервер ажиллаж байгаа ч хүссэн хуудас (зам) нь тэнд байхгүй гэсэн үг.",
+      hint: "Энэ удаад дугтуй сервер хүртэл хүрсэн шүү дээ.",
+    });
+  }
+
+  async function level4() {
+    resetStage("https://amitan.mn/irves.html");
+    task(`<code>https://amitan.mn/irves.html</code> хуудсыг нээнэ үү. Энэ хуудас <b>зураг, хэлбэржүүлэлттэй (CSS)</b>. Хүсэлтийн тэмдэглэлд хэдэн хүсэлт явахыг ажиглаарай.`);
+    say("Зурагтай хуудас ганц хүсэлтээр ирдэг үү? «Явах» дарж үзээрэй.");
+    const u = await askAddress((u) =>
+      u.host !== "amitan.mn" || u.path !== "irves.html" ? "Энэ түвшинд https://amitan.mn/irves.html хаягийг нээнэ." : null);
+    const res = await fetchFlow(u, { askDNS: false, askRouter: false, askFileMode: "auto" });
+    if (!res.ok) return;
+    view(PAGE_IRVES_PLAIN);
+    say(`Веб хөтөч HTML-ийг уншлаа. Кодын дотор <code>&lt;link href="style.css"&gt;</code> ба <code>&lt;img src="irves.jpg"&gt;</code> байна. Эдгээр файл <b>одоохондоо ирээгүй</b> тул хуудас энгийн, зураггүй харагдаж байна.<div class="row-btns"><button class="next" id="more" type="button">Дутуу файлуудыг хүсэх ▶</button></div>`);
+    await pending((res2) => $("#more").addEventListener("click", res2, { once: true }));
+    const css = await fetchFlow({ host: "amitan.mn", path: "style.css" }, { dnsCached: true, askFileMode: "auto" });
+    if (css.ok) view(PAGE_IRVES_STYLED);
+    const img = await fetchFlow({ host: "amitan.mn", path: "irves.jpg" }, { dnsCached: true, askFileMode: "auto" });
+    if (img.ok) view(PAGE_IRVES_FULL);
+    say(`Одоо хуудас бүрэн харагдаж байна. <b>Веб сайт = олон файл.</b> Веб хөтөч файл бүрийн төлөө тусдаа хүсэлт илгээдэг.`);
+    quiz({
+      text: "Энэ хуудсыг бүтэн харуулахын тулд сервер рүү хэдэн хүсэлт явсан бэ?",
+      options: ["1", "2", "3", "4"],
+      answer: 2,
+      why: "3 хүсэлт: irves.html, style.css, irves.jpg. (DNS-ийн асуулт сервер рүү явдаггүй.)",
+      hint: "Хүсэлтийн тэмдэглэлийн «→ хүсэлт» мөрүүдийг тоолоорой.",
+    });
+  }
+
+  async function level5() {
+    resetStage("");
+    task(`Одоо <b>өөрийн сайтаа нийтэлнэ</b>. Таны компьютер дээрх хавтсыг серверт байршуулж, өөрийн веб хаягтай болно. Сайтынхаа нэрийг <b>латин жижиг үсгээр</b> бичээд «Серверт байршуулах» дарна уу.`);
+    say("Одоогоор таны сайт зөвхөн таны компьютер дээр байгаа тул өөр хэн ч харж чадахгүй.");
+    view(`<div class="empty">Таны сайт одоохондоо зөвхөн таны компьютер дээр байна</div>`);
+    renderServer("Netlify сервер", NETLIFY_IP, []);
+    serverFiles = [];
+    $("#computer-slot").innerHTML = `
+      <div class="computer" id="computer">
+        <b>💻 Таны компьютер: <span class="mono">minii-sait/</span></b>
+        <ul>${MY_FILES.map((f) => `<li>${f}</li>`).join("")}</ul>
+        <label for="sitename">Сайтын нэр</label>
+        <div class="name-row"><span>https://</span><input id="sitename" placeholder="bat-basketball" spellcheck="false"><span>.netlify.app</span></div>
+        <button class="deploy" id="deploy" type="button">⬆ Серверт байршуулах</button>
+      </div>`;
+    requestAnimationFrame(drawWires);
+
+    myName = await pending((resolve) => {
+      $("#deploy").addEventListener("click", function h() {
+        const v = $("#sitename").value.trim();
+        if (!v) { feedback("✗ Сайтынхаа нэрийг бичнэ үү."); return; }
+        if (/[^\x00-\x7F]/.test(v)) { feedback("✗ Зөвхөн латин үсэг ашиглана. Кирилл үсэг веб хаягт эвдэрдэг."); return; }
+        if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(v)) { feedback("✗ Зөвхөн жижиг латин үсэг, тоо, зураас (-) ашиглана. Хоосон зай байж болохгүй."); return; }
+        if (v.length < 3 || v.length > 30) { feedback("✗ Нэр 3–30 тэмдэгттэй байна."); return; }
+        $("#deploy").removeEventListener("click", h);
+        $("#deploy").disabled = true; $("#sitename").disabled = true;
+        feedback("");
+        resolve(v);
+      });
+    });
+    const host = myName + ".netlify.app";
+    say(`Таны файлууд интернэтээр дамжин Netlify-ийн сервер рүү явж байна...`);
+    const comp = $("#computer");
+    for (const f of MY_FILES) {
+      await fly(comp, nodes.r1, f);
+      await fly(nodes.r1, nodes.r3, f);
+      await fly(nodes.r3, nodes.server, f);
+      serverFiles.push(f);
+      renderServer("Netlify сервер", NETLIFY_IP, serverFiles, f);
+    }
+    log(`⬆ ${MY_FILES.length} файл серверт байршлаа`, "ok");
+    dnsTable[host] = NETLIFY_IP;
+    renderDNS(host);
+    say(`Таны сайт серверт байршиж, DNS-д <code>${esc(host)}</code> нэр бүртгэгдлээ. Одоо хэн ч энэ хаягаар таны сайтыг нээж чадна.`);
+    await sleep(1500);
+    task(`Хаягийн мөрөнд <code>https://${esc(host)}</code> гэж бичээд «Явах» дарна уу. <b>Файлын нэрийг бичих шаардлагагүй.</b>`);
+    const u = await askAddress((u) => u.host !== host ? `Өөрийн хаяг болох https://${host} -ийг бичнэ үү.` : null);
+    const res = await fetchFlow(u, { askDNS: false, askRouter: false, askFileMode: "auto" });
+    if (!res.ok) { view(page404(res.file)); return; }
+    view(pageMine(myName));
+    say(`🎉 Таны сайт интернэтэд байна! Хичээлийн дараагийн хэсэгт яг үүнийг <b>бодитоор</b> хийнэ.`);
+    quiz({
+      text: `<code>https://${esc(host)}</code> хаягийн аль хэсэг нь Netlify компанийн <b>домэйн</b> бэ?`,
+      options: ["https://", esc(myName), "netlify.app", "/index.html"],
+      answer: 2,
+      why: `netlify.app бол домэйн, харин «${esc(myName)}» бол таны үнэгүй авсан дэд домэйн.`,
+      hint: "Бүх сурагчийн хаягт адилхан байгаа хэсгийг олоорой.",
+    });
+  }
+
+  function showFinale() {
+    abortRun();
+    const slot = $("#quiz-slot");
+    slot.innerHTML = "";
+    task("Бүх түвшинг дуусгалаа!");
+    say(`<div class="finale"><h3>🏆 Баяр хүргэе!</h3>
+      Та хуудас хэрхэн ирдгийг бүхэлд нь даган явууллаа:
+      <ol>
+        <li><b>Веб хөтөч</b> хаягийг уншина</li>
+        <li><b>DNS</b> домэйн нэрийг IP хаяг болгоно</li>
+        <li><b>Чиглүүлэгчид</b> хүсэлтийг сервер хүртэл дамжуулна</li>
+        <li><b>Сервер</b> файлыг олж буцаана (байхгүй бол 404)</li>
+        <li>Веб хөтөч файлуудыг уншиж хуудсыг <b>зурна</b></li>
+      </ol>
+      <p style="margin-top:12px">Одоо өөрийн веб сайтаа <b>бодитоор</b> нийтлэх цаг боллоо!</p></div>`);
+    feedback("");
+  }
+
+  const RUNNERS = [level1, level2, level3, level4, level5];
+
+  function renderNav() {
+    const nav = $("#levels");
+    nav.innerHTML = "";
+    LEVELS.forEach((l, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = l.title;
+      if (i === current) b.classList.add("on");
+      if (done.has(i)) b.classList.add("done");
+      b.addEventListener("click", () => startLevel(i));
+      nav.appendChild(b);
+    });
+  }
+
+  function startLevel(i) {
+    abortRun();
+    current = i;
+    renderNav();
+    RUNNERS[i]().catch((e) => { if (e !== ABORT) console.error(e); });
+  }
+
+  $("#restart").addEventListener("click", () => startLevel(current));
+  document.querySelectorAll(".speed button").forEach((b) =>
+    b.addEventListener("click", () => {
+      speed = parseFloat(b.dataset.speed);
+      document.querySelectorAll(".speed button").forEach((x) => x.classList.toggle("on", x === b));
+    })
+  );
+  ["#n-server", "#n-dns"].forEach((sel) =>
+    $(sel).addEventListener("keydown", (e) => { if (e.target === $(sel) && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $(sel).click(); } })
+  );
+
+  startLevel(0);
+})();
+</script>
+</body>
+</html>
