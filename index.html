@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Веб засварлагч</title>
+  <title>HTML код засварлагч</title>
   <link rel="stylesheet" href="vendor/codemirror/lib/codemirror.css">
   <link rel="stylesheet" href="css/editor.css">
 </head>
 <body>
   <!-- All visible text comes from the UI object in js/editor.js (data-ui attributes). -->
   <header class="toolbar">
+    <img src="public/images/logo.png" alt="Хүүхдийн шинжлэх ухаан технологийн ордон" class="logo" aria-hidden="true">
     <span class="app-title" data-ui="appTitle"></span>
 
     <div class="tool-group">
@@ -19,9 +20,9 @@
       <button type="button" id="btn-save-as"><span data-ui="saveAs"></span></button>
     </div>
 
-    <div class="tool-group">
+    <!-- <div class="tool-group">
       <button type="button" id="btn-image" class="accent"><span class="icon" aria-hidden="true">🖼️</span><span data-ui="addImage"></span></button>
-    </div>
+    </div> -->
 
     <div class="tool-group">
       <button type="button" id="btn-font-down" data-ui-title="fontSmaller">A−</button>

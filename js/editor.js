@@ -5,7 +5,7 @@
 
 // All text the students see. Edit here to change the wording.
 var UI = {
-  appTitle: 'Веб засварлагч',
+  appTitle: 'HTML код засварлагч',
   new: 'Шинэ',
   open: 'Нээх',
   save: 'Хадгалах',

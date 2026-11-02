@@ -5,10 +5,21 @@
    Data URLs (not blob URLs) because the sandboxed preview can not load our blob URLs. */
 'use strict';
 
+// Temporarily hidden. Set to true to bring back «Зураг нэмэх», the image list,
+// drag-and-drop and the image warnings. (Also uncomment #btn-image in index.html.)
+var IMAGES_ENABLED = false;
+
 var Images = {
   map: Object.create(null),   // 'irves.jpg' → 'data:image/jpeg;base64,...'
 
   init: function () {
+    if (!IMAGES_ENABLED) {
+      document.querySelector('.images').hidden = true;
+      // Still stop the browser from opening a dropped file in place of the editor.
+      window.addEventListener('dragover', function (e) { e.preventDefault(); });
+      window.addEventListener('drop', function (e) { e.preventDefault(); });
+      return;
+    }
     var input = $('image-input');
     $('btn-image').addEventListener('click', function () { input.click(); });
     input.addEventListener('change', function () {
@@ -20,6 +31,7 @@ var Images = {
   },
 
   addFiles: function (files) {
+    if (!IMAGES_ENABLED) return;
     Array.prototype.forEach.call(files, function (file) {
       if (!isImageFile(file)) {
         App.status(t('notImage', { name: file.name }));
@@ -51,6 +63,7 @@ var Images = {
 
   // Warnings about the images used in the code.
   check: function (html) {
+    if (!IMAGES_ENABLED) return [];   // no hints about a button the student can not see
     var warnings = [];
     var seen = Object.create(null);
     mapImageRefs(html, function (ref) {
@@ -111,7 +124,7 @@ var Images = {
   },
 
   showDropZone: function () {
-    $('drop-overlay').hidden = false;
+    if (IMAGES_ENABLED) $('drop-overlay').hidden = false;
   }
 };
 
