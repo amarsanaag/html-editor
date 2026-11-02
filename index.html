@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Веб засварлагч</title>
+  <link rel="stylesheet" href="vendor/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+  <!-- All visible text comes from the UI object in js/editor.js (data-ui attributes). -->
+  <header class="toolbar">
+    <span class="app-title" data-ui="appTitle"></span>
+
+    <div class="tool-group">
+      <button type="button" id="btn-new"><span class="icon" aria-hidden="true">📄</span><span data-ui="new"></span></button>
+      <button type="button" id="btn-open"><span class="icon" aria-hidden="true">📂</span><span data-ui="open"></span></button>
+      <button type="button" id="btn-save" class="primary" data-ui-title="saveTitle"><span class="icon" aria-hidden="true">💾</span><span data-ui="save"></span></button>
+      <button type="button" id="btn-save-as"><span data-ui="saveAs"></span></button>
+    </div>
+
+    <div class="tool-group">
+      <button type="button" id="btn-image" class="accent"><span class="icon" aria-hidden="true">🖼️</span><span data-ui="addImage"></span></button>
+    </div>
+
+    <div class="tool-group">
+      <button type="button" id="btn-font-down" data-ui-title="fontSmaller">A−</button>
+      <button type="button" id="btn-font-up" data-ui-title="fontBigger">A+</button>
+    </div>
+
+    <span id="file-name" class="file-name"></span>
+
+    <button type="button" id="btn-reset" class="danger"><span class="icon" aria-hidden="true">🧹</span><span data-ui="reset"></span></button>
+  </header>
+
+  <main id="main" class="main">
+    <section class="pane pane-editor">
+      <h2 class="pane-title" data-ui="code"></h2>
+      <div id="code" class="code"></div>
+      <div class="status">
+        <p id="status-msg" class="status-msg" role="status" aria-live="polite"></p>
+        <ul id="warnings" class="warnings"></ul>
+      </div>
+      <div class="images">
+        <span class="images-title" data-ui="imagesTitle"></span>
+        <ul id="image-list" class="image-list"></ul>
+        <p id="images-empty" class="images-empty" data-ui="imagesEmpty"></p>
+      </div>
+    </section>
+
+    <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" tabindex="0"></div>
+
+    <section class="pane pane-preview">
+      <h2 class="pane-title" data-ui="preview"></h2>
+      <!-- No allow-same-origin: student code must not reach the editor or its storage. -->
+      <iframe id="preview" class="preview" sandbox="allow-scripts" data-ui-title="preview"></iframe>
+    </section>
+  </main>
+
+  <div id="drop-overlay" class="drop-overlay" hidden><p data-ui="dropHere"></p></div>
+
+  <input type="file" id="image-input" accept="image/*" multiple hidden>
+  <input type="file" id="open-input" accept=".html,.htm,text/html" hidden>
+
+  <dialog id="save-dialog">
+    <form method="dialog">
+      <h2 data-ui="saveDialogTitle"></h2>
+      <input id="save-name" type="text" required autocomplete="off" spellcheck="false">
+      <p id="save-hint" class="hint"></p>
+      <p class="note" data-ui="saveDialogNote"></p>
+      <div class="dialog-buttons">
+        <button value="ok" class="primary" data-ui="save"></button>
+        <button value="cancel" formnovalidate data-ui="cancel"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="template-dialog">
+    <form method="dialog">
+      <h2 data-ui="templatesTitle"></h2>
+      <div id="template-list" class="template-list"></div>
+      <div class="dialog-buttons">
+        <button value="cancel" data-ui="cancel"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="vendor/codemirror/lib/codemirror.js"></script>
+  <script src="vendor/codemirror/mode/xml/xml.js"></script>
+  <script src="vendor/codemirror/mode/javascript/javascript.js"></script>
+  <script src="vendor/codemirror/mode/css/css.js"></script>
+  <script src="vendor/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+  <script src="vendor/codemirror/addon/fold/xml-fold.js"></script>
+  <script src="vendor/codemirror/addon/edit/matchtags.js"></script>
+
+  <script src="js/editor.js"></script>
+  <script src="js/preview.js"></script>
+  <script src="js/images.js"></script>
+  <script src="js/files.js"></script>
+</body>
+</html>

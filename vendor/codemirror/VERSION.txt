@@ -1,0 +1,2 @@
+CodeMirror 5.65.16 (https://codemirror.net/5/), MIT license, see LICENSE.
+lib/codemirror.js and lib/codemirror.css are the minified builds from cdnjs.

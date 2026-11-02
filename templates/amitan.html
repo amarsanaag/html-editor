@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Миний дуртай амьтан</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- ===== Энэ хэсгийг өөрчлөх шаардлагагүй: хуудасны чимэглэл ===== -->
+  <style>
+    body {
+      margin: 0;
+      padding: 60px 16px 170px;
+      min-height: 100vh;
+      box-sizing: border-box;
+      position: relative;
+      overflow-x: hidden;
+      font-family: "Nunito", Arial, sans-serif;
+      color: #2b2b2b;
+      background-color: #9ED8F0; /* НЭМЭЛТ: дэвсгэр өнгийг сольж үзээрэй */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='white' opacity='0.5' transform='rotate(-18 90 90)'%3E%3Cellipse cx='40' cy='52' rx='13' ry='11'/%3E%3Ccircle cx='25' cy='34' r='5.5'/%3E%3Ccircle cx='36' cy='27' r='5.5'/%3E%3Ccircle cx='48' cy='28' r='5.5'/%3E%3Ccircle cx='57' cy='37' r='5.5'/%3E%3Cellipse cx='130' cy='140' rx='13' ry='11'/%3E%3Ccircle cx='115' cy='122' r='5.5'/%3E%3Ccircle cx='126' cy='115' r='5.5'/%3E%3Ccircle cx='138' cy='116' r='5.5'/%3E%3Ccircle cx='147' cy='125' r='5.5'/%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    /* Нар */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #FFD166;
+      box-shadow: 0 0 0 12px rgba(255, 209, 102, 0.45);
+    }
+
+    /* Толгод */
+    body::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 150px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 160' preserveAspectRatio='none'%3E%3Cpath d='M0 90 C240 20 420 20 640 80 S1040 150 1440 60 V160 H0z' fill='%238FD19E'/%3E%3Cpath d='M0 120 C300 70 560 90 820 125 S1220 150 1440 105 V160 H0z' fill='%235FB878'/%3E%3C/svg%3E") no-repeat bottom / 100% 100%;
+    }
+
+    /* Цагаан карт */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      background: white;
+      border: 4px solid #2b2b2b;
+      border-radius: 28px;
+      box-shadow: 10px 10px 0 #2b2b2b;
+      padding: 36px 32px;
+    }
+
+    .shoshgo {
+      display: table;
+      margin: 0 auto 8px;
+      background: #FFD166;
+      border: 3px solid #2b2b2b;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      text-align: center;
+      font-size: 60px;
+      font-weight: 900;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 28px;
+      margin: 32px 0 16px;
+    }
+
+    /* Полароид зураг */
+    figure {
+      margin: 0 auto 28px;
+      max-width: 400px;
+      background: white;
+      border: 3px solid #2b2b2b;
+      border-radius: 14px;
+      padding: 12px 12px 14px;
+      transform: rotate(-2deg);
+      box-shadow: 6px 6px 0 #FFD166;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #EAF4FB; /* зураг ачаалагдаагүй үед */
+    }
+
+    figcaption {
+      text-align: center;
+      font-weight: 700;
+      margin-top: 8px;
+      color: #555;
+    }
+
+    /* Өнгөт өгүүлбэрүүд */
+    p {
+      font-size: 21px;
+      line-height: 1.45;
+      margin: 0 0 12px;
+      padding: 14px 18px;
+      border-radius: 16px;
+    }
+
+    p:nth-of-type(1) { background: #FFF1D6; }
+    p:nth-of-type(2) { background: #E3F4E7; }
+    p:nth-of-type(3) { background: #E2EEFB; }
+    p:nth-of-type(4) { background: #FBE4EA; }
+
+    /* Галерей */
+    .galerei {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 18px;
+    }
+
+    .galerei figure {
+      margin: 0;
+      padding: 8px 8px 10px;
+      border-radius: 12px;
+      box-shadow: 4px 4px 0 #6CCB86;
+      transform: rotate(2deg);
+    }
+
+    .galerei figure:nth-child(2) { transform: rotate(-3deg); box-shadow: 4px 4px 0 #7DB6EC; }
+    .galerei figure:nth-child(3) { box-shadow: 4px 4px 0 #F49AB0; }
+
+    .galerei img { aspect-ratio: 1 / 1; }
+
+    /* Хөл хэсэг */
+    footer {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 3px dashed #d8d2c0;
+      font-size: 15px;
+      color: #555;
+    }
+
+    footer .zohiogch {
+      font-size: 20px;
+      font-weight: 800;
+      color: #2b2b2b;
+      margin-bottom: 8px;
+    }
+
+    footer ul { margin: 4px 0 0; padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="shoshgo">МИНИЙ ДУРТАЙ АМЬТАН</div>
+
+    <!-- ӨӨРЧЛӨХ: амьтны нэр -->
+    <h1>Ирвэс</h1>
+
+    <!-- ӨӨРЧЛӨХ: зөвхөн төгсгөлийн файлын нэрийг (irves.jpg) картан дээрхээр солино -->
+    <figure>
+      <img src="https://<багшийн-нэр>.github.io/amitan/zurag/irves.jpg" alt="Ирвэс">
+      <figcaption>Ирвэс</figcaption>
+    </figure>
+
+    <!-- ӨӨРЧЛӨХ: 4 өгүүлбэрийн "…" хэсгийг гүйцээнэ -->
+    <p>Миний дуртай амьтан бол …</p>
+    <p>Энэ амьтан … амьдардаг.</p>
+    <p>Энэ амьтан … иддэг.</p>
+    <p>Би энэ амьтанд дуртай, учир нь …</p>
+
+    <!-- НЭМЭЛТ ДААЛГАВАР (эрт дууссан бол): өөр зургууд нэмнэ -->
+    <h2>Бас нэг хэдэн зураг</h2>
+    <div class="galerei">
+      <figure>
+        <img src="https://<багшийн-нэр>.github.io/amitan/zurag/irves-uul.jpg" alt="Уулан дээрх ирвэс">
+        <figcaption>Уулан дээр</figcaption>
+      </figure>
+      <figure>
+        <img src="https://<багшийн-нэр>.github.io/amitan/zurag/irves-bamba.jpg" alt="Ирвэсийн бамбарууш">
+        <figcaption>Бамбарууш</figcaption>
+      </figure>
+      <figure>
+        <img src="https://<багшийн-нэр>.github.io/amitan/zurag/irves-suul.jpg" alt="Ирвэсийн урт сүүл">
+        <figcaption>Урт сүүл</figcaption>
+      </figure>
+    </div>
+
+    <footer>
+      <!-- ӨӨРЧЛӨХ: зөвхөн өөрийн нэр (овог, сургууль, утас бичихгүй) -->
+      <div class="zohiogch">Зохиосон: Бат</div>
+
+      <!-- ӨӨРЧЛӨХ: зураг бүрийн зохиогч, лицензийг картан дээрээс бичнэ -->
+      Зургийн эх сурвалж:
+      <ul>
+        <li>irves.jpg — …, CC BY 4.0</li>
+        <li>irves-uul.jpg — …, CC BY 4.0</li>
+        <li>irves-bamba.jpg — …, CC0</li>
+        <li>irves-suul.jpg — …, CC BY 4.0</li>
+      </ul>
+    </footer>
+  </main>
+</body>
+</html>
